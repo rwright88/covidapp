@@ -9,28 +9,33 @@ import pandas as pd
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-
 server = app.server
 
 DF = pd.read_csv("data/us.csv")
 NAMES = [{"label": x, "value": x} for x in DF["name"].unique().tolist()]
 NAMES_INITIAL = ["us", "pa"]
-NOTE = (
-    "Last updated July 4. Cases and deaths data available for states and counties."
-    " Tests data available for states."
-)
-LABEL = (
-    "Choose any number of states (two-letter code)"
-    " or counties (two-letter code, county name):"
-)
 CONFIG = {"displayModeBar": False}
 
+NOTES = dcc.Markdown(
+    """
+Last updated July 5. Cases and deaths data available for states and counties.
+Tests data available for states.
+
+Sources: [The Covid Tracking Project](https://covidtracking.com/data)
+and [Johns Hopkins](https://github.com/CSSEGISandData/COVID-19).
+"""
+)
+LABEL = dcc.Markdown(
+    """
+Choose any number of states (two-letter code) or counties (two-letter code, county name):
+"""
+)
 
 app.layout = html.Div(
     style={"max-width": 1000, "margin-left": "auto", "margin-right": "auto"},
     children=[
         html.H1(children="US COVID-19 data"),
-        html.P(children=NOTE),
+        html.P(children=NOTES),
         html.Label(LABEL),
         dcc.Dropdown(id="ids", options=NAMES, value=NAMES_INITIAL, multi=True),
         dcc.Graph(id="cases-ac-pm", config=CONFIG),
@@ -42,7 +47,7 @@ app.layout = html.Div(
     ],
 )
 
-LAYOUT = {
+PLOTLY_LAYOUT = {
     "hovermode": "x",
     "legend_title_text": "",
     "margin": {"l": 50, "b": 50, "t": 50, "r": 50},
@@ -73,7 +78,7 @@ def plot_trend(y, names=None, title=None):
         names = NAMES_INITIAL[:1]
     df = DF[DF["name"].isin(names)]
     fig = px.line(df, x="date", y=y, color="name", height=500)
-    layout = LAYOUT.copy()
+    layout = PLOTLY_LAYOUT.copy()
     layout["title_text"] = title
     fig.update_traces(hovertemplate=None)
     fig.update_layout(layout)
