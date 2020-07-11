@@ -21,7 +21,7 @@ CONFIG = {"displayModeBar": False}
 
 NOTES = dcc.Markdown(
     """
-Last updated July 10. Cases and deaths data available for states and counties.
+Last updated July 11. Cases and deaths data available for states and counties.
 Tests data available for states.
 
 Sources: [The Covid Tracking Project](https://covidtracking.com/data)
