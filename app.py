@@ -7,16 +7,21 @@ from dash.dependencies import Input, Output
 import plotly.express as px
 import pandas as pd
 
-DF = pd.read_csv("data/us.csv")
-NAMES = DF["name"].unique().tolist()
-STATES = [{"label": x, "value": x} for x in NAMES if len(x) == 2]
-COUNTIES = [{"label": x, "value": x} for x in NAMES if len(x) > 2]
-INITIAL = ["us", "pa"]
+DF = pd.read_csv("data/covid.csv")
+COUNTRIES = DF[DF["type"] == "country"]["name"].unique().tolist()
+STATES = DF[DF["type"] == "state"]["name"].unique().tolist()
+COUNTIES = DF[DF["type"] == "county"]["name"].unique().tolist()
+COUNTRIES = [{"label": x, "value": x} for x in COUNTRIES]
+STATES = [{"label": x, "value": x} for x in STATES]
+COUNTIES = [{"label": x, "value": x} for x in COUNTIES]
+INITIAL_COUNTRIES = ["united states"]
+INITIAL_STATES = ["pa"]
 
 NOTES = dcc.Markdown(
     """
-Last updated July 12. Cases and deaths data available for states and counties.
-Tests data available for states.
+Last updated July 14.
+Cases and deaths data available for countries, US states, and US counties.
+Tests data available for US states.
 
 Sources: [The Covid Tracking Project](https://covidtracking.com/data)
 and [Johns Hopkins](https://github.com/CSSEGISandData/COVID-19).
@@ -52,7 +57,7 @@ PLOTLY_LAYOUT = {
 def plot_trend(y, names, title):
     """Create trend plot of y by name"""
     if len(names) == 0:
-        names = INITIAL[:1]
+        names = INITIAL_COUNTRIES[:1]
     df = DF[DF["name"].isin(names)]
     layout = PLOTLY_LAYOUT.copy()
     layout["title_text"] = title
@@ -62,13 +67,15 @@ def plot_trend(y, names, title):
     return fig
 
 
-def combine_names(states, counties):
-    """Combine state and county selections into one list"""
+def combine_names(countries, states, counties):
+    """Combine country, state, and county selections into one list"""
+    if countries is None:
+        countries = []
     if states is None:
         states = []
     if counties is None:
         counties = []
-    names = states + counties
+    names = countries + states + counties
     return names
 
 
@@ -82,21 +89,30 @@ server = app.server
 app.layout = html.Div(
     style={"max-width": 1050, "margin-left": "auto", "margin-right": "auto"},
     children=[
-        html.H1("US COVID-19 data"),
+        html.H1("COVID-19 data"),
         html.P(NOTES),
-        html.Label("Choose states and/or counties:"),
+        html.Label("Choose any combination of countries, US states, and US counties:"),
+        dcc.Dropdown(
+            id="id_countries",
+            options=COUNTRIES,
+            value=INITIAL_COUNTRIES,
+            multi=True,
+            placeholder="Select countries",
+            style={"margin-top": "5px"},
+        ),
         dcc.Dropdown(
             id="id_states",
             options=STATES,
-            value=INITIAL,
+            value=INITIAL_STATES,
             multi=True,
-            placeholder="Select states",
+            placeholder="Select US states",
+            style={"margin-top": "5px"},
         ),
         dcc.Dropdown(
             id="id_counties",
             options=COUNTIES,
             multi=True,
-            placeholder="Select counties",
+            placeholder="Select US counties",
             style={"margin-top": "5px"},
         ),
         dcc.Graph(id="cases-ac-pm", config=PLOTLY_CONFIG),
@@ -111,60 +127,84 @@ app.layout = html.Div(
 
 @app.callback(
     Output("cases-ac-pm", "figure"),
-    [Input("id_states", "value"), Input("id_counties", "value")],
+    [
+        Input("id_countries", "value"),
+        Input("id_states", "value"),
+        Input("id_counties", "value"),
+    ],
 )
-def plot_cases_ac_pm(states, counties):
-    names = combine_names(states, counties)
+def plot_cases_ac_pm(countries, states, counties):
+    names = combine_names(countries, states, counties)
     title = "Average daily new cases in the last 7 days per million"
     return plot_trend(y="cases_ac_pm", names=names, title=title)
 
 
 @app.callback(
     Output("cases-pm", "figure"),
-    [Input("id_states", "value"), Input("id_counties", "value")],
+    [
+        Input("id_countries", "value"),
+        Input("id_states", "value"),
+        Input("id_counties", "value"),
+    ],
 )
-def plot_cases_pm(states, counties):
-    names = combine_names(states, counties)
+def plot_cases_pm(countries, states, counties):
+    names = combine_names(countries, states, counties)
     title = "Total cases per million"
     return plot_trend(y="cases_pm", names=names, title=title)
 
 
 @app.callback(
     Output("tests-ac-pm", "figure"),
-    [Input("id_states", "value"), Input("id_counties", "value")],
+    [
+        Input("id_countries", "value"),
+        Input("id_states", "value"),
+        Input("id_counties", "value"),
+    ],
 )
-def plot_tests_ac_pm(states, counties):
-    names = combine_names(states, counties)
+def plot_tests_ac_pm(countries, states, counties):
+    names = combine_names(countries, states, counties)
     title = "Average daily new tests in the last 7 days per million"
     return plot_trend(y="tests_ac_pm", names=names, title=title)
 
 
 @app.callback(
     Output("tests-pm", "figure"),
-    [Input("id_states", "value"), Input("id_counties", "value")],
+    [
+        Input("id_countries", "value"),
+        Input("id_states", "value"),
+        Input("id_counties", "value"),
+    ],
 )
-def plot_tests_pm(states, counties):
-    names = combine_names(states, counties)
+def plot_tests_pm(countries, states, counties):
+    names = combine_names(countries, states, counties)
     title = "Total tests per million"
     return plot_trend(y="tests_pm", names=names, title=title)
 
 
 @app.callback(
     Output("deaths-ac-pm", "figure"),
-    [Input("id_states", "value"), Input("id_counties", "value")],
+    [
+        Input("id_countries", "value"),
+        Input("id_states", "value"),
+        Input("id_counties", "value"),
+    ],
 )
-def plot_deaths_ac_pm(states, counties):
-    names = combine_names(states, counties)
+def plot_deaths_ac_pm(countries, states, counties):
+    names = combine_names(countries, states, counties)
     title = "Average daily new deaths in the last 7 days per million"
     return plot_trend(y="deaths_ac_pm", names=names, title=title)
 
 
 @app.callback(
     Output("deaths-pm", "figure"),
-    [Input("id_states", "value"), Input("id_counties", "value")],
+    [
+        Input("id_countries", "value"),
+        Input("id_states", "value"),
+        Input("id_counties", "value"),
+    ],
 )
-def plot_deaths_pm(states, counties):
-    names = combine_names(states, counties)
+def plot_deaths_pm(countries, states, counties):
+    names = combine_names(countries, states, counties)
     title = "Total deaths per million"
     return plot_trend(y="deaths_pm", names=names, title=title)
 
