@@ -8,14 +8,19 @@ import plotly.express as px
 import pandas as pd
 
 DF = pd.read_csv("data/covid.csv")
-COUNTRIES = DF[DF["type"] == "country"]["name"].unique().tolist()
-STATES = DF[DF["type"] == "state"]["name"].unique().tolist()
-COUNTIES = DF[DF["type"] == "county"]["name"].unique().tolist()
-COUNTRIES = [{"label": x, "value": x} for x in COUNTRIES]
-STATES = [{"label": x, "value": x} for x in STATES]
-COUNTIES = [{"label": x, "value": x} for x in COUNTIES]
+COUNTRIES = [
+    {"label": x, "value": x}
+    for x in DF[DF["type"] == "country"]["name"].unique().tolist()
+]
+STATES = [
+    {"label": x, "value": x}
+    for x in DF[DF["type"] == "state"]["name"].unique().tolist()
+]
+COUNTIES = [
+    {"label": x, "value": x}
+    for x in DF[DF["type"] == "county"]["name"].unique().tolist()
+]
 INITIAL_COUNTRIES = ["united states"]
-INITIAL_STATES = ["pa"]
 
 NOTES = dcc.Markdown(
     """
@@ -30,6 +35,7 @@ and [Johns Hopkins](https://github.com/CSSEGISandData/COVID-19).
 
 PLOTLY_CONFIG = {"displayModeBar": False}
 PLOTLY_LAYOUT = {
+    "dragmode": False,
     "hovermode": "x",
     "legend": {"title": {"text": ""}},
     "margin": {"l": 75, "b": 50, "t": 50, "r": 75},
@@ -38,7 +44,7 @@ PLOTLY_LAYOUT = {
         "font": {"size": 16},
         "x": 0.5,
         "xanchor": "center",
-        "xref": "container",
+        "xref": "paper",
         "y": 0.92,
         "yanchor": "bottom",
         "yref": "container",
@@ -61,6 +67,8 @@ def plot_trend(y, names, title):
     df = DF[DF["name"].isin(names)]
     layout = PLOTLY_LAYOUT.copy()
     layout["title_text"] = title
+    if len(names) == 1:
+        layout["showlegend"] = False
     fig = px.line(df, x="date", y=y, color="name", height=500)
     fig.update_layout(layout)
     fig.update_traces(hovertemplate=None)
@@ -87,7 +95,7 @@ app = dash.Dash(
 server = app.server
 
 app.layout = html.Div(
-    style={"max-width": 1050, "margin-left": "auto", "margin-right": "auto"},
+    style={"max-width": 1000, "margin-left": "auto", "margin-right": "auto"},
     children=[
         html.H1("COVID-19 data"),
         html.P(NOTES),
@@ -103,7 +111,6 @@ app.layout = html.Div(
         dcc.Dropdown(
             id="id_states",
             options=STATES,
-            value=INITIAL_STATES,
             multi=True,
             placeholder="Select US states",
             style={"margin-top": "5px"},
@@ -135,7 +142,7 @@ app.layout = html.Div(
 )
 def plot_cases_ac_pm(countries, states, counties):
     names = combine_names(countries, states, counties)
-    title = "Average daily new cases in the last 7 days per million"
+    title = "New cases per million, 7-day average"
     return plot_trend(y="cases_ac_pm", names=names, title=title)
 
 
@@ -163,7 +170,7 @@ def plot_cases_pm(countries, states, counties):
 )
 def plot_tests_ac_pm(countries, states, counties):
     names = combine_names(countries, states, counties)
-    title = "Average daily new tests in the last 7 days per million"
+    title = "New tests per million, 7-day average"
     return plot_trend(y="tests_ac_pm", names=names, title=title)
 
 
@@ -191,7 +198,7 @@ def plot_tests_pm(countries, states, counties):
 )
 def plot_deaths_ac_pm(countries, states, counties):
     names = combine_names(countries, states, counties)
-    title = "Average daily new deaths in the last 7 days per million"
+    title = "New deaths per million, 7-day average"
     return plot_trend(y="deaths_ac_pm", names=names, title=title)
 
 
