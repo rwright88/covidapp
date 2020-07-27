@@ -24,7 +24,7 @@ INITIAL_COUNTRIES = ["united states"]
 
 NOTES = dcc.Markdown(
     """
-Last updated July 26.
+Last updated July 27.
 Cases and deaths data available for countries, US states, and US counties.
 Tests data available for US states.
 
