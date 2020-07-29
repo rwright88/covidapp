@@ -60,7 +60,7 @@ PLOTLY_LAYOUT = {
 }
 
 
-def plot_trend(y, names, title):
+def plot_trend(y, names, title, y_range=None):
     """Create trend plot of y by name"""
     if len(names) == 0:
         names = INITIAL_COUNTRIES[:1]
@@ -72,6 +72,8 @@ def plot_trend(y, names, title):
     fig = px.line(df, x="date", y=y, color="name", height=500)
     fig.update_layout(layout)
     fig.update_traces(hovertemplate=None)
+    if y_range is not None:
+        fig.update_yaxes(range=y_range)
     return fig
 
 
@@ -124,10 +126,12 @@ app.layout = html.Div(
         ),
         dcc.Graph(id="cases-ac-pm", config=PLOTLY_CONFIG),
         dcc.Graph(id="cases-pm", config=PLOTLY_CONFIG),
-        dcc.Graph(id="tests-ac-pm", config=PLOTLY_CONFIG),
-        dcc.Graph(id="tests-pm", config=PLOTLY_CONFIG),
         dcc.Graph(id="deaths-ac-pm", config=PLOTLY_CONFIG),
         dcc.Graph(id="deaths-pm", config=PLOTLY_CONFIG),
+        dcc.Graph(id="tests-ac-pm", config=PLOTLY_CONFIG),
+        dcc.Graph(id="tests-pm", config=PLOTLY_CONFIG),
+        dcc.Graph(id="positivity-ac", config=PLOTLY_CONFIG),
+        dcc.Graph(id="positivity", config=PLOTLY_CONFIG),
     ],
 )
 
@@ -161,6 +165,34 @@ def plot_cases_pm(countries, states, counties):
 
 
 @app.callback(
+    Output("deaths-ac-pm", "figure"),
+    [
+        Input("id_countries", "value"),
+        Input("id_states", "value"),
+        Input("id_counties", "value"),
+    ],
+)
+def plot_deaths_ac_pm(countries, states, counties):
+    names = combine_names(countries, states, counties)
+    title = "New deaths per million, 7-day average"
+    return plot_trend(y="deaths_ac_pm", names=names, title=title)
+
+
+@app.callback(
+    Output("deaths-pm", "figure"),
+    [
+        Input("id_countries", "value"),
+        Input("id_states", "value"),
+        Input("id_counties", "value"),
+    ],
+)
+def plot_deaths_pm(countries, states, counties):
+    names = combine_names(countries, states, counties)
+    title = "Total deaths per million"
+    return plot_trend(y="deaths_pm", names=names, title=title)
+
+
+@app.callback(
     Output("tests-ac-pm", "figure"),
     [
         Input("id_countries", "value"),
@@ -189,31 +221,31 @@ def plot_tests_pm(countries, states, counties):
 
 
 @app.callback(
-    Output("deaths-ac-pm", "figure"),
+    Output("positivity-ac", "figure"),
     [
         Input("id_countries", "value"),
         Input("id_states", "value"),
         Input("id_counties", "value"),
     ],
 )
-def plot_deaths_ac_pm(countries, states, counties):
+def plot_positivity_ac(countries, states, counties):
     names = combine_names(countries, states, counties)
-    title = "New deaths per million, 7-day average"
-    return plot_trend(y="deaths_ac_pm", names=names, title=title)
+    title = "New test positivity rate (%), 7-day average"
+    return plot_trend(y="positivity_ac", names=names, title=title, y_range=[-1.5, 31.5])
 
 
 @app.callback(
-    Output("deaths-pm", "figure"),
+    Output("positivity", "figure"),
     [
         Input("id_countries", "value"),
         Input("id_states", "value"),
         Input("id_counties", "value"),
     ],
 )
-def plot_deaths_pm(countries, states, counties):
+def plot_positivity(countries, states, counties):
     names = combine_names(countries, states, counties)
-    title = "Total deaths per million"
-    return plot_trend(y="deaths_pm", names=names, title=title)
+    title = "Total test positivity rate (%)"
+    return plot_trend(y="positivity", names=names, title=title, y_range=[-1.5, 31.5])
 
 
 if __name__ == "__main__":
