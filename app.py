@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+
+from datetime import date
+
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -24,7 +27,9 @@ INITIAL_COUNTRIES = ["united states"]
 
 NOTES = dcc.Markdown(
     """
-Last updated August 5.
+Last updated """
+    + date.today().strftime("%B %#d")
+    + """.
 Cases and deaths data available for countries, US states, and US counties.
 Tests data available for US states.
 
