@@ -3,3 +3,4 @@
 *.pyc
 .DS_Store
 .env
+update_app.py
