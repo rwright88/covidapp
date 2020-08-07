@@ -3,4 +3,5 @@
 *.pyc
 .DS_Store
 .env
+TODO.txt
 update_app.py
