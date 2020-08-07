@@ -5,10 +5,11 @@ from datetime import date
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table
 from dash.dependencies import Input, Output
-import plotly.express as px
+import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 DF = pd.read_csv("data/covid.csv")
 COUNTRIES = [
@@ -38,48 +39,39 @@ and [Johns Hopkins](https://github.com/CSSEGISandData/COVID-19).
 """
 )
 
+PLOTLY_COLORS = [
+    "#1F77B4",
+    "#FF7F0E",
+    "#2CA02C",
+    "#D62728",
+    "#9467BD",
+    "#8C564B",
+    "#E377C2",
+    "#7F7F7F",
+    "#BCBD22",
+    "#17BECF",
+]
 PLOTLY_CONFIG = {"displayModeBar": False}
 PLOTLY_LAYOUT = {
     "dragmode": False,
+    "height": 4000,
     "hovermode": "x",
-    "legend": {"title": {"text": ""}},
-    "margin": {"l": 75, "b": 50, "t": 50, "r": 75},
+    "margin": {"l": 50, "b": 50, "t": 50, "r": 50},
     "plot_bgcolor": "#fff",
-    "title": {
-        "font": {"size": 16},
-        "x": 0.5,
-        "xanchor": "center",
-        "xref": "paper",
-        "y": 0.92,
-        "yanchor": "bottom",
-        "yref": "container",
-    },
-    "xaxis": {"fixedrange": True, "gridcolor": "#eee", "title": {"text": ""}},
-    "yaxis": {
-        "fixedrange": True,
-        "gridcolor": "#eee",
-        "title": {"text": ""},
-        "zerolinecolor": "#eee",
-        "zerolinewidth": 2,
-    },
+    "showlegend": False,
 }
-
-
-def plot_trend(y, names, title, y_range=None):
-    """Create trend plot of y by name"""
-    if len(names) == 0:
-        names = INITIAL_COUNTRIES[:1]
-    df = DF[DF["name"].isin(names)]
-    layout = PLOTLY_LAYOUT.copy()
-    layout["title_text"] = title
-    if len(names) == 1:
-        layout["showlegend"] = False
-    fig = px.line(df, x="date", y=y, color="name", height=500)
-    fig.update_layout(layout)
-    fig.update_traces(hovertemplate=None)
-    if y_range is not None:
-        fig.update_yaxes(range=y_range)
-    return fig
+PLOTLY_XAXES = {
+    "fixedrange": True,
+    "gridcolor": "#eee",
+    "title": {"text": ""},
+}
+PLOTLY_YAXES = {
+    "fixedrange": True,
+    "gridcolor": "#eee",
+    "title": {"text": ""},
+    "zerolinecolor": "#eee",
+    "zerolinewidth": 2,
+}
 
 
 def combine_names(countries, states, counties):
@@ -129,128 +121,68 @@ app.layout = html.Div(
             placeholder="Select US counties",
             style={"margin-top": "5px"},
         ),
-        dcc.Graph(id="cases-ac-pm", config=PLOTLY_CONFIG),
-        dcc.Graph(id="cases-pm", config=PLOTLY_CONFIG),
-        dcc.Graph(id="deaths-ac-pm", config=PLOTLY_CONFIG),
-        dcc.Graph(id="deaths-pm", config=PLOTLY_CONFIG),
-        dcc.Graph(id="tests-ac-pm", config=PLOTLY_CONFIG),
-        dcc.Graph(id="tests-pm", config=PLOTLY_CONFIG),
-        dcc.Graph(id="positivity-ac", config=PLOTLY_CONFIG),
-        dcc.Graph(id="positivity", config=PLOTLY_CONFIG),
+        dcc.Graph(id="plot-everything", config=PLOTLY_CONFIG),
     ],
 )
 
 
 @app.callback(
-    Output("cases-ac-pm", "figure"),
+    Output("plot-everything", "figure"),
     [
         Input("id_countries", "value"),
         Input("id_states", "value"),
         Input("id_counties", "value"),
     ],
 )
-def plot_cases_ac_pm(countries, states, counties):
+def plot_everything(countries, states, counties):
+    data = {
+        "cases_ac_pm": "New cases per million, 7-day average",
+        "cases_pm": "Total cases per million",
+        "deaths_ac_pm": "New deaths per million, 7-day average",
+        "deaths_pm": "Total deaths per million",
+        "tests_ac_pm": "New tests per million, 7-day average",
+        "tests_pm": "Total tests per million",
+        "positivity_ac": "New test positivity rate (%), 7-day average",
+        "positivity": "Total test positivity rate (%)",
+    }
     names = combine_names(countries, states, counties)
-    title = "New cases per million, 7-day average"
-    return plot_trend(y="cases_ac_pm", names=names, title=title)
+    n_names = len(names)
+    if n_names == 0:
+        names = INITIAL_COUNTRIES[:1]
+    df = DF[DF["name"].isin(names)]
+    colors = PLOTLY_COLORS.copy() * int(np.ceil(n_names / 10))
+    cols = list(data.keys())
+    titles = list(data.values())
+    n_plots = len(cols)
+    fig = make_subplots(
+        rows=n_plots, cols=1, subplot_titles=titles, vertical_spacing=0.03
+    )
 
+    for i, name in enumerate(names):
+        df1 = df[df["name"] == name]
+        x = df1["date"].to_numpy()
+        line = {"color": colors[i]}
+        for i in range(n_plots):
+            y = df1[cols[i]].to_numpy()
+            fig.add_trace(go.Scatter(x=x, y=y, name=name, line=line), row=i + 1, col=1)
+            if not np.isnan(y[-1]):
+                fig.add_annotation(
+                    x=x[-1],
+                    y=y[-1],
+                    text=name,
+                    font=line,
+                    showarrow=False,
+                    xanchor="left",
+                    row=i + 1,
+                    col=1,
+                )
 
-@app.callback(
-    Output("cases-pm", "figure"),
-    [
-        Input("id_countries", "value"),
-        Input("id_states", "value"),
-        Input("id_counties", "value"),
-    ],
-)
-def plot_cases_pm(countries, states, counties):
-    names = combine_names(countries, states, counties)
-    title = "Total cases per million"
-    return plot_trend(y="cases_pm", names=names, title=title)
-
-
-@app.callback(
-    Output("deaths-ac-pm", "figure"),
-    [
-        Input("id_countries", "value"),
-        Input("id_states", "value"),
-        Input("id_counties", "value"),
-    ],
-)
-def plot_deaths_ac_pm(countries, states, counties):
-    names = combine_names(countries, states, counties)
-    title = "New deaths per million, 7-day average"
-    return plot_trend(y="deaths_ac_pm", names=names, title=title)
-
-
-@app.callback(
-    Output("deaths-pm", "figure"),
-    [
-        Input("id_countries", "value"),
-        Input("id_states", "value"),
-        Input("id_counties", "value"),
-    ],
-)
-def plot_deaths_pm(countries, states, counties):
-    names = combine_names(countries, states, counties)
-    title = "Total deaths per million"
-    return plot_trend(y="deaths_pm", names=names, title=title)
-
-
-@app.callback(
-    Output("tests-ac-pm", "figure"),
-    [
-        Input("id_countries", "value"),
-        Input("id_states", "value"),
-        Input("id_counties", "value"),
-    ],
-)
-def plot_tests_ac_pm(countries, states, counties):
-    names = combine_names(countries, states, counties)
-    title = "New tests per million, 7-day average"
-    return plot_trend(y="tests_ac_pm", names=names, title=title)
-
-
-@app.callback(
-    Output("tests-pm", "figure"),
-    [
-        Input("id_countries", "value"),
-        Input("id_states", "value"),
-        Input("id_counties", "value"),
-    ],
-)
-def plot_tests_pm(countries, states, counties):
-    names = combine_names(countries, states, counties)
-    title = "Total tests per million"
-    return plot_trend(y="tests_pm", names=names, title=title)
-
-
-@app.callback(
-    Output("positivity-ac", "figure"),
-    [
-        Input("id_countries", "value"),
-        Input("id_states", "value"),
-        Input("id_counties", "value"),
-    ],
-)
-def plot_positivity_ac(countries, states, counties):
-    names = combine_names(countries, states, counties)
-    title = "New test positivity rate (%), 7-day average"
-    return plot_trend(y="positivity_ac", names=names, title=title, y_range=[-1.5, 31.5])
-
-
-@app.callback(
-    Output("positivity", "figure"),
-    [
-        Input("id_countries", "value"),
-        Input("id_states", "value"),
-        Input("id_counties", "value"),
-    ],
-)
-def plot_positivity(countries, states, counties):
-    names = combine_names(countries, states, counties)
-    title = "Total test positivity rate (%)"
-    return plot_trend(y="positivity", names=names, title=title, y_range=[-1.5, 31.5])
+    fig.update_layout(PLOTLY_LAYOUT)
+    fig.update_xaxes(PLOTLY_XAXES)
+    fig.update_yaxes(PLOTLY_YAXES)
+    fig.update_yaxes(range=[-1.5, 31.5], row=7, col=1)
+    fig.update_yaxes(range=[-1.5, 31.5], row=8, col=1)
+    return fig
 
 
 if __name__ == "__main__":
