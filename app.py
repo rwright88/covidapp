@@ -9,8 +9,9 @@ from dash.dependencies import Input, Output
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import s3fs
 
-DF = pd.read_csv("data/covid.csv")
+DF = pd.read_csv("s3://rwright-covid/covid.csv")
 COUNTRIES = [
     {"label": x, "value": x}
     for x in DF[DF["type"] == "country"]["name"].unique().tolist()
