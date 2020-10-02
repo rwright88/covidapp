@@ -11,7 +11,28 @@ import pandas as pd
 import plotly.graph_objects as go
 import s3fs
 
-DF = pd.read_csv("s3://rwright-covid/covid.csv")
+
+def read_data(path):
+    cols = [
+        "type",
+        "name",
+        "date",
+        "positivity",
+        "positivity_ac",
+        "cases_pm",
+        "tests_pm",
+        "deaths_pm",
+        "cases_ac_pm",
+        "tests_ac_pm",
+        "deaths_ac_pm",
+    ]
+    df = pd.read_csv(path)
+    df["date"] = pd.to_datetime(df["date"])
+    df = df[cols]
+    return df
+
+
+DF = read_data("s3://rwright-covid/covid.csv")
 COUNTRIES = [
     {"label": x, "value": x}
     for x in DF[DF["type"] == "country"]["name"].unique().tolist()
@@ -71,7 +92,12 @@ def get_layout():
             "yanchor": "bottom",
             "yref": "container",
         },
-        "xaxis": {"fixedrange": True, "gridcolor": "#eee", "title": {"text": ""}},
+        "xaxis": {
+            "fixedrange": True,
+            "gridcolor": "#eee",
+            "title": {"text": ""},
+            "type": "date",
+        },
         "yaxis": {
             "fixedrange": True,
             "gridcolor": "#eee",
@@ -107,13 +133,13 @@ def plot_trend(y, names, title, y_range=None):
 
     for i, name in enumerate(names):
         df1 = df[df["name"] == name]
-        x1 = df1["date"].to_numpy()
+        x1 = df1["date"]
         y1 = df1[y].to_numpy()
         line = {"color": colors[i]}
         fig.add_trace(go.Scatter(x=x1, y=y1, name=name, line=line))
         if ~np.isnan(y1[-1]) and n_names > 1:
             fig.add_annotation(
-                x=x1[-1],
+                x=x1.iloc[-1],
                 y=y1[-1],
                 text=name,
                 font=line,
@@ -292,4 +318,3 @@ def plot_positivity(countries, states, counties):
 
 if __name__ == "__main__":
     app.run_server(debug=True)
-
