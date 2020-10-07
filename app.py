@@ -54,11 +54,10 @@ NOTES = dcc.Markdown(
 Last updated """
     + date.today().strftime("%Y-%m-%d")
     + """.
-Cases and deaths data available for countries, US states, and US counties.
-Tests data available for US states.
 
-Sources: [The Covid Tracking Project](https://covidtracking.com/data)
-and [Johns Hopkins](https://github.com/CSSEGISandData/COVID-19).
+Sources: [The Covid Tracking Project](https://covidtracking.com/data),
+[Johns Hopkins](https://github.com/CSSEGISandData/COVID-19),
+and [Our World in Data](https://github.com/owid/covid-19-data/tree/master/public/data).
 """
 )
 
@@ -138,11 +137,13 @@ def plot_trend(y, names, title, y_range=None):
         x1 = df1["date"]
         y1 = df1[y].to_numpy()
         line = {"color": colors[i]}
-        fig.add_trace(go.Scatter(x=x1, y=y1, name=name, line=line))
-        if ~np.isnan(y1[-1]) and n_names > 1:
+        fig.add_trace(go.Scatter(x=x1, y=y1, name=name, line=line, connectgaps=True))
+
+        if np.sum(~np.isnan(y1)) > 0 and n_names > 1:
+            ind = np.max(np.argwhere(~np.isnan(y1)))
             fig.add_annotation(
-                x=x1.iloc[-1],
-                y=y1[-1],
+                x=x1.iloc[ind],
+                y=y1[ind],
                 text=name,
                 font=line,
                 showarrow=False,
