@@ -17,14 +17,13 @@ def read_data(path):
         "type",
         "name",
         "date",
-        "positivity",
-        "positivity_ac",
         "cases_pm",
-        "tests_pm",
         "deaths_pm",
+        "tests_pm",
         "cases_ac_pm",
-        "tests_ac_pm",
         "deaths_ac_pm",
+        "tests_ac_pm",
+        "hosp_a_pm",
     ]
     df = pd.read_csv(path)
     df["date"] = pd.to_datetime(df["date"])
@@ -199,8 +198,7 @@ app.layout = html.Div(
         dcc.Graph(id="plot-deaths-pm", config=PLOTLY_CONFIG),
         dcc.Graph(id="plot-tests-ac-pm", config=PLOTLY_CONFIG),
         dcc.Graph(id="plot-tests-pm", config=PLOTLY_CONFIG),
-        dcc.Graph(id="plot-positivity-ac", config=PLOTLY_CONFIG),
-        dcc.Graph(id="plot-positivity", config=PLOTLY_CONFIG),
+        dcc.Graph(id="plot-hosp-a-pm", config=PLOTLY_CONFIG),
     ],
 )
 
@@ -290,33 +288,17 @@ def plot_tests_pm(countries, states, counties):
 
 
 @app.callback(
-    Output("plot-positivity-ac", "figure"),
+    Output("plot-hosp-a-pm", "figure"),
     [
         Input("id_countries", "value"),
         Input("id_states", "value"),
         Input("id_counties", "value"),
     ],
 )
-def plot_positivity_ac(countries, states, counties):
+def plot_hosp_a_pm(countries, states, counties):
     names = combine_names(countries, states, counties)
-    title = "New test positivity rate (%), 7-day average"
-    y_range = [-1.5, 31.5]
-    return plot_trend("positivity_ac", names, title, y_range)
-
-
-@app.callback(
-    Output("plot-positivity", "figure"),
-    [
-        Input("id_countries", "value"),
-        Input("id_states", "value"),
-        Input("id_counties", "value"),
-    ],
-)
-def plot_positivity(countries, states, counties):
-    names = combine_names(countries, states, counties)
-    title = "Total test positivity rate (%)"
-    y_range = [-1.5, 31.5]
-    return plot_trend("positivity", names, title, y_range)
+    title = "Currently hospitalized per million, 7-day average"
+    return plot_trend("hosp_a_pm", names, title)
 
 
 if __name__ == "__main__":
