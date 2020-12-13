@@ -120,7 +120,7 @@ def combine_names(countries, states, counties):
     return names
 
 
-def plot_trend(y, names, title, y_range=None):
+def plot_trend(y, names, title, x_range="all"):
     """Plot y trend by names"""
     n_names = len(names)
     if n_names == 0:
@@ -129,6 +129,15 @@ def plot_trend(y, names, title, y_range=None):
     else:
         colors = PLOTLY_COLORS * int(np.ceil(n_names / 10))
     df = DF[DF["name"].isin(names)]
+
+    if x_range == "last6":
+        df = df[df["date"] >= (df["date"].max() - pd.Timedelta(180, unit="D"))]
+    elif x_range == "last3":
+        df = df[df["date"] >= (df["date"].max() - pd.Timedelta(90, unit="D"))]
+
+    y_max = df[y].max() * 1.05
+    y_min = 0 - y_max / 1.05 * 0.05
+
     fig = go.Figure()
 
     for i, name in enumerate(names):
@@ -151,8 +160,7 @@ def plot_trend(y, names, title, y_range=None):
 
     layout = get_layout()
     layout["title"]["text"] = title
-    if y_range is not None:
-        layout["yaxis"]["range"] = y_range
+    layout["yaxis"]["range"] = [y_min, y_max]
     fig.update_layout(layout)
     return fig
 
@@ -192,6 +200,17 @@ app.layout = html.Div(
             placeholder="Select US counties",
             style={"margin-top": "5px"},
         ),
+        dcc.RadioItems(
+            id="id_dates",
+            options=[
+                {"label": "All data", "value": "all"},
+                {"label": "Last 6 months", "value": "last6"},
+                {"label": "Last 3 months", "value": "last3"},
+            ],
+            value="all",
+            labelStyle={"display": "inline-block"},
+            style={"margin-top": "5px"},
+        ),
         dcc.Graph(id="plot-cases-ac-pm", config=PLOTLY_CONFIG),
         dcc.Graph(id="plot-cases-pm", config=PLOTLY_CONFIG),
         dcc.Graph(id="plot-deaths-ac-pm", config=PLOTLY_CONFIG),
@@ -209,12 +228,13 @@ app.layout = html.Div(
         Input("id_countries", "value"),
         Input("id_states", "value"),
         Input("id_counties", "value"),
+        Input("id_dates", "value"),
     ],
 )
-def plot_cases_ac_pm(countries, states, counties):
+def plot_cases_ac_pm(countries, states, counties, dates):
     names = combine_names(countries, states, counties)
     title = "New cases per million, 7-day average"
-    return plot_trend("cases_ac_pm", names, title)
+    return plot_trend("cases_ac_pm", names=names, title=title, x_range=dates)
 
 
 @app.callback(
@@ -223,12 +243,13 @@ def plot_cases_ac_pm(countries, states, counties):
         Input("id_countries", "value"),
         Input("id_states", "value"),
         Input("id_counties", "value"),
+        Input("id_dates", "value"),
     ],
 )
-def plot_cases_pm(countries, states, counties):
+def plot_cases_pm(countries, states, counties, dates):
     names = combine_names(countries, states, counties)
     title = "Total cases per million"
-    return plot_trend("cases_pm", names, title)
+    return plot_trend("cases_pm", names=names, title=title, x_range=dates)
 
 
 @app.callback(
@@ -237,12 +258,13 @@ def plot_cases_pm(countries, states, counties):
         Input("id_countries", "value"),
         Input("id_states", "value"),
         Input("id_counties", "value"),
+        Input("id_dates", "value"),
     ],
 )
-def plot_deaths_ac_pm(countries, states, counties):
+def plot_deaths_ac_pm(countries, states, counties, dates):
     names = combine_names(countries, states, counties)
     title = "New deaths per million, 7-day average"
-    return plot_trend("deaths_ac_pm", names, title)
+    return plot_trend("deaths_ac_pm", names=names, title=title, x_range=dates)
 
 
 @app.callback(
@@ -251,12 +273,13 @@ def plot_deaths_ac_pm(countries, states, counties):
         Input("id_countries", "value"),
         Input("id_states", "value"),
         Input("id_counties", "value"),
+        Input("id_dates", "value"),
     ],
 )
-def plot_deaths_pm(countries, states, counties):
+def plot_deaths_pm(countries, states, counties, dates):
     names = combine_names(countries, states, counties)
     title = "Total deaths per million"
-    return plot_trend("deaths_pm", names, title)
+    return plot_trend("deaths_pm", names=names, title=title, x_range=dates)
 
 
 @app.callback(
@@ -265,12 +288,13 @@ def plot_deaths_pm(countries, states, counties):
         Input("id_countries", "value"),
         Input("id_states", "value"),
         Input("id_counties", "value"),
+        Input("id_dates", "value"),
     ],
 )
-def plot_tests_ac_pm(countries, states, counties):
+def plot_tests_ac_pm(countries, states, counties, dates):
     names = combine_names(countries, states, counties)
     title = "New tests per million, 7-day average"
-    return plot_trend("tests_ac_pm", names, title)
+    return plot_trend("tests_ac_pm", names=names, title=title, x_range=dates)
 
 
 @app.callback(
@@ -279,12 +303,13 @@ def plot_tests_ac_pm(countries, states, counties):
         Input("id_countries", "value"),
         Input("id_states", "value"),
         Input("id_counties", "value"),
+        Input("id_dates", "value"),
     ],
 )
-def plot_tests_pm(countries, states, counties):
+def plot_tests_pm(countries, states, counties, dates):
     names = combine_names(countries, states, counties)
     title = "Total tests per million"
-    return plot_trend("tests_pm", names, title)
+    return plot_trend("tests_pm", names=names, title=title, x_range=dates)
 
 
 @app.callback(
@@ -293,12 +318,13 @@ def plot_tests_pm(countries, states, counties):
         Input("id_countries", "value"),
         Input("id_states", "value"),
         Input("id_counties", "value"),
+        Input("id_dates", "value"),
     ],
 )
-def plot_hosp_a_pm(countries, states, counties):
+def plot_hosp_a_pm(countries, states, counties, dates):
     names = combine_names(countries, states, counties)
     title = "Currently hospitalized per million, 7-day average"
-    return plot_trend("hosp_a_pm", names, title)
+    return plot_trend("hosp_a_pm", names=names, title=title, x_range=dates)
 
 
 if __name__ == "__main__":
