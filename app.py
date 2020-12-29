@@ -24,6 +24,7 @@ def read_data(path):
         "deaths_ac_pm",
         "tests_ac_pm",
         "hosp_a_pm",
+        "vaccinations_pm",
     ]
     df = pd.read_csv(path)
     df["date"] = pd.to_datetime(df["date"])
@@ -130,6 +131,9 @@ def plot_trend(y, names, title, x_range="all"):
         colors = PLOTLY_COLORS * int(np.ceil(n_names / 10))
     df = DF[DF["name"].isin(names)]
 
+    if y == "vaccinations_pm":
+        df = df[df["date"] >= "2020-12-01"]
+
     if x_range == "last6":
         df = df[df["date"] >= (df["date"].max() - pd.Timedelta(180, unit="D"))]
     elif x_range == "last3":
@@ -218,6 +222,7 @@ app.layout = html.Div(
         dcc.Graph(id="plot-tests-ac-pm", config=PLOTLY_CONFIG),
         dcc.Graph(id="plot-tests-pm", config=PLOTLY_CONFIG),
         dcc.Graph(id="plot-hosp-a-pm", config=PLOTLY_CONFIG),
+        dcc.Graph(id="plot-vaccinations-pm", config=PLOTLY_CONFIG),
     ],
 )
 
@@ -325,6 +330,21 @@ def plot_hosp_a_pm(countries, states, counties, dates):
     names = combine_names(countries, states, counties)
     title = "Currently hospitalized per million, 7-day average"
     return plot_trend("hosp_a_pm", names=names, title=title, x_range=dates)
+
+
+@app.callback(
+    Output("plot-vaccinations-pm", "figure"),
+    [
+        Input("id_countries", "value"),
+        Input("id_states", "value"),
+        Input("id_counties", "value"),
+        Input("id_dates", "value"),
+    ],
+)
+def plot_vaccinations_pm(countries, states, counties, dates):
+    names = combine_names(countries, states, counties)
+    title = "Total vaccinations per million"
+    return plot_trend("vaccinations_pm", names=names, title=title, x_range=dates)
 
 
 if __name__ == "__main__":
