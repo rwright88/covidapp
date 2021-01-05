@@ -2,10 +2,10 @@
 
 from datetime import date
 
+from dash.dependencies import Input, Output
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -133,7 +133,7 @@ def plot_trend(y, names, title, x_range="all"):
     df = DF[DF["name"].isin(names)]
 
     if y in ["vaccinations_ac_pm", "vaccinations_pm"]:
-        df = df[df["date"] >= "2020-12-01"]
+        df = df[df["date"] >= "2020-12-15"]
 
     if x_range == "last6":
         df = df[df["date"] >= (df["date"].max() - pd.Timedelta(180, unit="D"))]
@@ -347,7 +347,6 @@ def plot_vaccinations_ac_pm(countries, states, counties, dates):
     names = combine_names(countries, states, counties)
     title = "New vaccinations per million, 7-day average"
     return plot_trend("vaccinations_ac_pm", names=names, title=title, x_range=dates)
-
 
 
 @app.callback(
