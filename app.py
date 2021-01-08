@@ -56,9 +56,7 @@ Last updated """
     + date.today().strftime("%Y-%m-%d")
     + """.
 
-Sources: [The Covid Tracking Project](https://covidtracking.com/data),
-[Johns Hopkins](https://github.com/CSSEGISandData/COVID-19),
-and [Our World in Data](https://github.com/owid/covid-19-data/tree/master/public/data).
+View code and data sources [here](https://github.com/rwright88/covid).
 """
 )
 
