@@ -75,12 +75,12 @@ PLOTLY_COLORS = [
 PLOTLY_CONFIG = {"displayModeBar": False}
 
 
-def get_layout():
+def get_layout_plot():
     return {
         "dragmode": False,
         "height": 500,
         "hovermode": "x",
-        "margin": {"l": 75, "b": 75, "t": 75, "r": 75},
+        "margin": {"l": 75, "r": 75, "t": 75, "b": 75},
         "plot_bgcolor": "#fff",
         "showlegend": False,
         "title": {
@@ -108,6 +108,25 @@ def get_layout():
     }
 
 
+def get_layout_map():
+    return {
+        "dragmode": False,
+        "geo": {"scope": "usa", "showlakes": False},
+        "height": 600,
+        "margin": {"l": 75, "r": 75, "t": 75, "b": 75},
+        "plot_bgcolor": "#fff",
+        "title": {
+            "font": {"size": 16},
+            "x": 0.5,
+            "xanchor": "center",
+            "xref": "container",
+            "y": 0.9,
+            "yanchor": "bottom",
+            "yref": "container",
+        },
+    }
+
+
 def combine_names(countries, states, counties):
     """Combine country, state, and county selections into one list"""
     if countries is None:
@@ -121,7 +140,7 @@ def combine_names(countries, states, counties):
 
 
 def plot_trend(y, names, title, x_range="all"):
-    """Plot y trend by names"""
+    """Plot trend"""
     n_names = len(names)
     if n_names == 0:
         colors = PLOTLY_COLORS[:1]
@@ -161,9 +180,45 @@ def plot_trend(y, names, title, x_range="all"):
                 xanchor="left",
             )
 
-    layout = get_layout()
+    layout = get_layout_plot()
     layout["title"]["text"] = title
     layout["yaxis"]["range"] = [y_min, y_max]
+    fig.update_layout(layout)
+    return fig
+
+
+def map_current(val, title, z_range=None):
+    """Map current values"""
+    if val in ["vaccinations_ac_pm", "vaccinations_pm"]:
+        state = DF[DF["type"] == "state"]
+        current = []
+        ind = state.groupby("name").indices
+        for k, v in ind.items():
+            state1 = state.iloc[v].copy()
+            state1[val] = state1[val].fillna(method="ffill")
+            current.append(state1)
+        current = pd.concat(current, ignore_index=True)
+        current = current[current["date"] == current["date"].max()]
+    else:
+        state = DF[DF["type"] == "state"]
+        current = state[state["date"] == state["date"].max()]
+
+    if z_range is None:
+        z_range = [0, current[val].max() * 0.8]
+
+    data = {
+        "type": "choropleth",
+        "locations": current["name"].str.upper(),
+        "locationmode": "USA-states",
+        "z": current[val],
+        "zmin": z_range[0],
+        "zmax": z_range[1],
+        "colorscale": "Blues",
+        "colorbar": {"len": 0.5},
+    }
+    layout = get_layout_map()
+    layout["title"]["text"] = title
+    fig = go.Figure(data)
     fig.update_layout(layout)
     return fig
 
@@ -214,15 +269,34 @@ app.layout = html.Div(
             labelStyle={"display": "inline-block"},
             style={"margin-top": "5px"},
         ),
+
+        html.H2("Cases"),
         dcc.Graph(id="plot-cases-ac-pm", config=PLOTLY_CONFIG),
         dcc.Graph(id="plot-cases-pm", config=PLOTLY_CONFIG),
+        dcc.Graph(id="map-cases-ac-pm", config=PLOTLY_CONFIG),
+        dcc.Graph(id="map-cases-pm", config=PLOTLY_CONFIG),
+
+        html.H2("Deaths"),
         dcc.Graph(id="plot-deaths-ac-pm", config=PLOTLY_CONFIG),
         dcc.Graph(id="plot-deaths-pm", config=PLOTLY_CONFIG),
+        dcc.Graph(id="map-deaths-ac-pm", config=PLOTLY_CONFIG),
+        dcc.Graph(id="map-deaths-pm", config=PLOTLY_CONFIG),
+
+        html.H2("Tests"),
         dcc.Graph(id="plot-tests-ac-pm", config=PLOTLY_CONFIG),
         dcc.Graph(id="plot-tests-pm", config=PLOTLY_CONFIG),
+        dcc.Graph(id="map-tests-ac-pm", config=PLOTLY_CONFIG),
+        dcc.Graph(id="map-tests-pm", config=PLOTLY_CONFIG),
+
+        html.H2("Hospitalizations"),
         dcc.Graph(id="plot-hosp-a-pm", config=PLOTLY_CONFIG),
+        dcc.Graph(id="map-hosp-a-pm", config=PLOTLY_CONFIG),
+
+        html.H2("Vaccinations"),
         dcc.Graph(id="plot-vaccinations-ac-pm", config=PLOTLY_CONFIG),
         dcc.Graph(id="plot-vaccinations-pm", config=PLOTLY_CONFIG),
+        dcc.Graph(id="map-vaccinations-ac-pm", config=PLOTLY_CONFIG),
+        dcc.Graph(id="map-vaccinations-pm", config=PLOTLY_CONFIG),
     ],
 )
 
@@ -257,6 +331,20 @@ def plot_cases_pm(countries, states, counties, dates):
     return plot_trend("cases_pm", names=names, title=title, x_range=dates)
 
 
+@app.callback(Output("map-cases-ac-pm", "figure"), [Input("id_dates", "value")])
+def map_cases_ac_pm(dates):
+    title = "New cases per million, 7-day average"
+    z_range = None
+    return map_current("cases_ac_pm", title=title, z_range=z_range)
+
+
+@app.callback(Output("map-cases-pm", "figure"), [Input("id_dates", "value")])
+def map_cases_pm(dates):
+    title = "Total cases per million"
+    z_range = None
+    return map_current("cases_pm", title=title, z_range=z_range)
+
+
 @app.callback(
     Output("plot-deaths-ac-pm", "figure"),
     [
@@ -285,6 +373,20 @@ def plot_deaths_pm(countries, states, counties, dates):
     names = combine_names(countries, states, counties)
     title = "Total deaths per million"
     return plot_trend("deaths_pm", names=names, title=title, x_range=dates)
+
+
+@app.callback(Output("map-deaths-ac-pm", "figure"), [Input("id_dates", "value")])
+def map_deaths_ac_pm(dates):
+    title = "New deaths per million, 7-day average"
+    z_range = None
+    return map_current("deaths_ac_pm", title=title, z_range=z_range)
+
+
+@app.callback(Output("map-deaths-pm", "figure"), [Input("id_dates", "value")])
+def map_deaths_pm(dates):
+    title = "Total deaths per million"
+    z_range = None
+    return map_current("deaths_pm", title=title, z_range=z_range)
 
 
 @app.callback(
@@ -317,6 +419,20 @@ def plot_tests_pm(countries, states, counties, dates):
     return plot_trend("tests_pm", names=names, title=title, x_range=dates)
 
 
+@app.callback(Output("map-tests-ac-pm", "figure"), [Input("id_dates", "value")])
+def map_tests_ac_pm(dates):
+    title = "New tests per million, 7-day average"
+    z_range = None
+    return map_current("tests_ac_pm", title=title, z_range=z_range)
+
+
+@app.callback(Output("map-tests-pm", "figure"), [Input("id_dates", "value")])
+def map_tests_pm(dates):
+    title = "Total tests per million"
+    z_range = None
+    return map_current("tests_pm", title=title, z_range=z_range)
+
+
 @app.callback(
     Output("plot-hosp-a-pm", "figure"),
     [
@@ -330,6 +446,13 @@ def plot_hosp_a_pm(countries, states, counties, dates):
     names = combine_names(countries, states, counties)
     title = "Currently hospitalized per million, 7-day average"
     return plot_trend("hosp_a_pm", names=names, title=title, x_range=dates)
+
+
+@app.callback(Output("map-hosp-a-pm", "figure"), [Input("id_dates", "value")])
+def map_hosp_a_pm(dates):
+    title = "Currently hospitalized per million, 7-day average"
+    z_range = None
+    return map_current("hosp_a_pm", title=title, z_range=z_range)
 
 
 @app.callback(
@@ -360,6 +483,20 @@ def plot_vaccinations_pm(countries, states, counties, dates):
     names = combine_names(countries, states, counties)
     title = "Total vaccinations per million"
     return plot_trend("vaccinations_pm", names=names, title=title, x_range=dates)
+
+
+@app.callback(Output("map-vaccinations-ac-pm", "figure"), [Input("id_dates", "value")])
+def map_vaccinations_ac_pm(dates):
+    title = "New vaccinations per million, 7-day average"
+    z_range = None
+    return map_current("vaccinations_ac_pm", title=title, z_range=z_range)
+
+
+@app.callback(Output("map-vaccinations-pm", "figure"), [Input("id_dates", "value")])
+def map_vaccinations_pm(dates):
+    title = "Total vaccinations per million"
+    z_range = None
+    return map_current("vaccinations_pm", title=title, z_range=z_range)
 
 
 if __name__ == "__main__":
