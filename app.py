@@ -189,19 +189,8 @@ def plot_trend(y, names, title, x_range="all"):
 
 def map_current(val, title, z_range=None):
     """Map current values"""
-    if val in ["vaccinations_ac_pm", "vaccinations_pm"]:
-        state = DF[DF["type"] == "state"]
-        current = []
-        ind = state.groupby("name").indices
-        for k, v in ind.items():
-            state1 = state.iloc[v].copy()
-            state1[val] = state1[val].fillna(method="ffill")
-            current.append(state1)
-        current = pd.concat(current, ignore_index=True)
-        current = current[current["date"] == current["date"].max()]
-    else:
-        state = DF[DF["type"] == "state"]
-        current = state[state["date"] == state["date"].max()]
+    state = DF[DF["type"] == "state"]
+    current = state[state["date"] == state["date"].max()]
 
     if z_range is None:
         z_range = [0, current[val].max() * 0.8]
