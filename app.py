@@ -189,7 +189,8 @@ def plot_trend(y, names, title, x_range="all"):
 
 def map_current(val, title, z_range=None):
     """Map current values"""
-    state = DF[DF["type"] == "state"]
+    state = DF.loc[DF["type"] == "state", ["name", "date", val]]
+    state = state[state[val].notna()]
     current = state[state["date"] == state["date"].max()]
 
     if z_range is None:
