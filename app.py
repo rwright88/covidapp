@@ -194,7 +194,7 @@ def map_current(val, title, z_range=None):
     current = state[state["date"] == state["date"].max()]
 
     if z_range is None:
-        z_range = [0, current[val].max() * 0.8]
+        z_range = [0, current[val].quantile(0.95)]
 
     data = {
         "type": "choropleth",
