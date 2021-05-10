@@ -13,25 +13,22 @@ import s3fs
 
 
 def read_data(path):
-    cols = [
-        "type",
-        "name",
-        "date",
-        "cases_ac_pm",
-        "cases_pm",
-        "deaths_ac_pm",
-        "deaths_pm",
-        "hosp_a_pm",
-        "tests_ac_pm",
-        "tests_pm",
-        "vaccinations_ac_pm",
-        "vaccinations_pm",
-    ]
-    df = pd.read_csv(path)
-    df["date"] = pd.to_datetime(df["date"])
-    df["name"] = df["name"].astype("category")
-    df["type"] = df["type"].astype("category")
-    df = df[cols]
+    cols = {
+        "type": "category",
+        "name": "category",
+        "date": np.datetime64,
+        "cases_ac_pm": float,
+        "cases_pm": float,
+        "deaths_ac_pm": float,
+        "deaths_pm": float,
+        "hosp_a_pm": float,
+        "tests_ac_pm": float,
+        "tests_pm": float,
+        "vaccinations_ac_pm": float,
+        "vaccinations_pm": float,
+    }
+    dtypes = {k: v for k, v in cols.items() if k != "date"}
+    df = pd.read_csv(path, usecols=cols.keys(), dtype=dtypes, parse_dates=["date"])
     return df
 
 
