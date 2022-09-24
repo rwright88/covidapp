@@ -453,7 +453,7 @@ def map_hosp_a_pm(dates):
 )
 def plot_vaccinations_ac_pm(countries, states, counties, dates):
     names = combine_names(countries, states, counties)
-    title = "New vaccinations (1st dose) per million, 7-day average"
+    title = "New vaccinations per million, 7-day average"
     return plot_trend("vaccinations_ac_pm", names=names, title=title, x_range=dates)
 
 
@@ -468,20 +468,20 @@ def plot_vaccinations_ac_pm(countries, states, counties, dates):
 )
 def plot_vaccinations_pm(countries, states, counties, dates):
     names = combine_names(countries, states, counties)
-    title = "Total vaccinations (1st dose) per million"
+    title = "Total vaccinations per million"
     return plot_trend("vaccinations_pm", names=names, title=title, x_range=dates)
 
 
 @app.callback(Output("map-vaccinations-ac-pm", "figure"), [Input("id_dates", "value")])
 def map_vaccinations_ac_pm(dates):
-    title = "New vaccinations (1st dose) per million, 7-day average"
+    title = "New vaccinations per million, 7-day average"
     z_range = None
     return map_current("vaccinations_ac_pm", title=title, z_range=z_range)
 
 
 @app.callback(Output("map-vaccinations-pm", "figure"), [Input("id_dates", "value")])
 def map_vaccinations_pm(dates):
-    title = "Total vaccinations (1st dose) per million"
+    title = "Total vaccinations per million"
     z_range = None
     return map_current("vaccinations_pm", title=title, z_range=z_range)
 
