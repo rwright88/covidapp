@@ -29,6 +29,7 @@ def read_data(path):
     }
     dtypes = {k: v for k, v in cols.items() if k != "date"}
     df = pd.read_csv(path, usecols=cols.keys(), dtype=dtypes, parse_dates=["date"])
+    df = df[df["type"] != "county"]
     return df
 
 
@@ -40,10 +41,6 @@ COUNTRIES = [
 STATES = [
     {"label": x, "value": x}
     for x in DF[DF["type"] == "state"]["name"].unique().tolist()
-]
-COUNTIES = [
-    {"label": x, "value": x}
-    for x in DF[DF["type"] == "county"]["name"].unique().tolist()
 ]
 INITIAL_COUNTRIES = ["united states"]
 
@@ -124,15 +121,13 @@ def get_layout_map():
     }
 
 
-def combine_names(countries, states, counties):
-    """Combine country, state, and county selections into one list"""
+def combine_names(countries, states):
+    """Combine country and state selections into one list"""
     if countries is None:
         countries = []
     if states is None:
         states = []
-    if counties is None:
-        counties = []
-    names = countries + states + counties
+    names = countries + states
     return names
 
 
@@ -147,12 +142,16 @@ def plot_trend(y, names, title, x_range="all"):
     df = DF[DF["name"].isin(names)]
 
     if y in ["vaccinations_ac_pm", "vaccinations_pm"]:
-        df = df[df["date"] >= "2020-12-15"]
+        df = df[df["date"] >= "2020-12-01"]
 
     if x_range == "last6":
         df = df[df["date"] >= (df["date"].max() - pd.Timedelta(180, unit="D"))]
     elif x_range == "last3":
         df = df[df["date"] >= (df["date"].max() - pd.Timedelta(90, unit="D"))]
+
+    days = (df["date"].max() - df["date"].min()).days
+    x_min = df["date"].min() - pd.Timedelta(int(days * 0.05), unit="D")
+    x_max = df["date"].max() + pd.Timedelta(int(days * 0.05), unit="D")
 
     y_max = df[y].max() * 1.05
     y_min = 0 - y_max / 1.05 * 0.05
@@ -179,6 +178,7 @@ def plot_trend(y, names, title, x_range="all"):
 
     layout = get_layout_plot()
     layout["title"]["text"] = title
+    layout["xaxis"]["range"] = [x_min, x_max]
     layout["yaxis"]["range"] = [y_min, y_max]
     fig.update_layout(layout)
     return fig
@@ -222,7 +222,7 @@ app.layout = html.Div(
     children=[
         html.H1("COVID-19 data"),
         html.P(NOTES),
-        html.Label("Choose any combination of countries, US states, and US counties:"),
+        html.Label("Choose any combination of countries and US states:"),
         dcc.Dropdown(
             id="id_countries",
             options=COUNTRIES,
@@ -236,13 +236,6 @@ app.layout = html.Div(
             options=STATES,
             multi=True,
             placeholder="Select US states",
-            style={"margin-top": "5px"},
-        ),
-        dcc.Dropdown(
-            id="id_counties",
-            options=COUNTIES,
-            multi=True,
-            placeholder="Select US counties",
             style={"margin-top": "5px"},
         ),
         dcc.RadioItems(
@@ -293,12 +286,11 @@ app.layout = html.Div(
     [
         Input("id_countries", "value"),
         Input("id_states", "value"),
-        Input("id_counties", "value"),
         Input("id_dates", "value"),
     ],
 )
-def plot_cases_ac_pm(countries, states, counties, dates):
-    names = combine_names(countries, states, counties)
+def plot_cases_ac_pm(countries, states, dates):
+    names = combine_names(countries, states)
     title = "New cases per million, 7-day average"
     return plot_trend("cases_ac_pm", names=names, title=title, x_range=dates)
 
@@ -308,12 +300,11 @@ def plot_cases_ac_pm(countries, states, counties, dates):
     [
         Input("id_countries", "value"),
         Input("id_states", "value"),
-        Input("id_counties", "value"),
         Input("id_dates", "value"),
     ],
 )
-def plot_cases_pm(countries, states, counties, dates):
-    names = combine_names(countries, states, counties)
+def plot_cases_pm(countries, states, dates):
+    names = combine_names(countries, states)
     title = "Total cases per million"
     return plot_trend("cases_pm", names=names, title=title, x_range=dates)
 
@@ -337,12 +328,11 @@ def map_cases_pm(dates):
     [
         Input("id_countries", "value"),
         Input("id_states", "value"),
-        Input("id_counties", "value"),
         Input("id_dates", "value"),
     ],
 )
-def plot_deaths_ac_pm(countries, states, counties, dates):
-    names = combine_names(countries, states, counties)
+def plot_deaths_ac_pm(countries, states, dates):
+    names = combine_names(countries, states)
     title = "New deaths per million, 7-day average"
     return plot_trend("deaths_ac_pm", names=names, title=title, x_range=dates)
 
@@ -352,12 +342,11 @@ def plot_deaths_ac_pm(countries, states, counties, dates):
     [
         Input("id_countries", "value"),
         Input("id_states", "value"),
-        Input("id_counties", "value"),
         Input("id_dates", "value"),
     ],
 )
-def plot_deaths_pm(countries, states, counties, dates):
-    names = combine_names(countries, states, counties)
+def plot_deaths_pm(countries, states, dates):
+    names = combine_names(countries, states)
     title = "Total deaths per million"
     return plot_trend("deaths_pm", names=names, title=title, x_range=dates)
 
@@ -381,12 +370,11 @@ def map_deaths_pm(dates):
     [
         Input("id_countries", "value"),
         Input("id_states", "value"),
-        Input("id_counties", "value"),
         Input("id_dates", "value"),
     ],
 )
-def plot_tests_ac_pm(countries, states, counties, dates):
-    names = combine_names(countries, states, counties)
+def plot_tests_ac_pm(countries, states, dates):
+    names = combine_names(countries, states)
     title = "New tests per million, 7-day average"
     return plot_trend("tests_ac_pm", names=names, title=title, x_range=dates)
 
@@ -396,12 +384,11 @@ def plot_tests_ac_pm(countries, states, counties, dates):
     [
         Input("id_countries", "value"),
         Input("id_states", "value"),
-        Input("id_counties", "value"),
         Input("id_dates", "value"),
     ],
 )
-def plot_tests_pm(countries, states, counties, dates):
-    names = combine_names(countries, states, counties)
+def plot_tests_pm(countries, states, dates):
+    names = combine_names(countries, states)
     title = "Total tests per million"
     return plot_trend("tests_pm", names=names, title=title, x_range=dates)
 
@@ -425,12 +412,11 @@ def map_tests_pm(dates):
     [
         Input("id_countries", "value"),
         Input("id_states", "value"),
-        Input("id_counties", "value"),
         Input("id_dates", "value"),
     ],
 )
-def plot_hosp_a_pm(countries, states, counties, dates):
-    names = combine_names(countries, states, counties)
+def plot_hosp_a_pm(countries, states, dates):
+    names = combine_names(countries, states)
     title = "Currently hospitalized per million, 7-day average"
     return plot_trend("hosp_a_pm", names=names, title=title, x_range=dates)
 
@@ -447,12 +433,11 @@ def map_hosp_a_pm(dates):
     [
         Input("id_countries", "value"),
         Input("id_states", "value"),
-        Input("id_counties", "value"),
         Input("id_dates", "value"),
     ],
 )
-def plot_vaccinations_ac_pm(countries, states, counties, dates):
-    names = combine_names(countries, states, counties)
+def plot_vaccinations_ac_pm(countries, states, dates):
+    names = combine_names(countries, states)
     title = "New vaccinations per million, 7-day average"
     return plot_trend("vaccinations_ac_pm", names=names, title=title, x_range=dates)
 
@@ -462,12 +447,11 @@ def plot_vaccinations_ac_pm(countries, states, counties, dates):
     [
         Input("id_countries", "value"),
         Input("id_states", "value"),
-        Input("id_counties", "value"),
         Input("id_dates", "value"),
     ],
 )
-def plot_vaccinations_pm(countries, states, counties, dates):
-    names = combine_names(countries, states, counties)
+def plot_vaccinations_pm(countries, states, dates):
+    names = combine_names(countries, states)
     title = "Total vaccinations per million"
     return plot_trend("vaccinations_pm", names=names, title=title, x_range=dates)
 
