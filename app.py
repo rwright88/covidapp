@@ -46,9 +46,7 @@ INITIAL_COUNTRIES = ["united states"]
 
 NOTES = dcc.Markdown(
     """
-Last updated """
-    + date.today().strftime("%Y-%m-%d")
-    + """.
+Last updated 2023-03-01.
 
 View code and data sources [here](https://github.com/rwright88/covid).
 """
@@ -144,10 +142,10 @@ def plot_trend(y, names, title, x_range="all"):
     if y in ["vaccinations_ac_pm", "vaccinations_pm"]:
         df = df[df["date"] >= "2020-12-01"]
 
-    if x_range == "last6":
-        df = df[df["date"] >= (df["date"].max() - pd.Timedelta(180, unit="D"))]
-    elif x_range == "last3":
-        df = df[df["date"] >= (df["date"].max() - pd.Timedelta(90, unit="D"))]
+    if x_range == "last12":
+        df = df[df["date"] >= (df["date"].max() - pd.Timedelta(366, unit="D"))]
+    elif x_range == "last6":
+        df = df[df["date"] >= (df["date"].max() - pd.Timedelta(183, unit="D"))]
 
     days = (df["date"].max() - df["date"].min()).days
     x_min = df["date"].min() - pd.Timedelta(int(days * 0.05), unit="D")
@@ -242,8 +240,8 @@ app.layout = html.Div(
             id="id_dates",
             options=[
                 {"label": "All data", "value": "all"},
+                {"label": "Last 12 months", "value": "last12"},
                 {"label": "Last 6 months", "value": "last6"},
-                {"label": "Last 3 months", "value": "last3"},
             ],
             value="all",
             labelStyle={"display": "inline-block"},
